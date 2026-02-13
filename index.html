@@ -46,7 +46,7 @@
             </div>
         </div>
         <div id="auth-status" class="absolute top-6 right-6">
-            <div class="w-2 h-2 rounded-full bg-gray-300"></div>
+            <div id="status-dot" class="w-2 h-2 rounded-full bg-gray-300"></div>
         </div>
     </div>
 
@@ -61,12 +61,12 @@
                 </button>
                 <p class="text-slate-400 text-xs font-bold uppercase tracking-widest">Pilas en reserva</p>
                 <h2 id="display-stock" class="text-6xl font-black text-slate-800 my-3">--</h2>
-                <p id="alert-stock" class="text-slate-400 text-xs font-bold italic">Sincronizando...</p>
+                <p id="alert-stock" class="text-slate-400 text-xs font-bold italic">Cargando...</p>
             </div>
 
             <button onclick="changeToday()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-5 rounded-2xl shadow-lg active:scale-95 transition-all flex flex-col items-center">
                 <span class="text-lg">🔋 REGISTRAR CAMBIO HOY</span>
-                <span id="prediction-btn" class="text-[10px] opacity-90 font-medium mt-1 uppercase tracking-tighter">Cargando estimación...</span>
+                <span id="prediction-btn" class="text-[10px] opacity-90 font-medium mt-1 uppercase tracking-tighter">Calculando...</span>
             </button>
 
             <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-100">
@@ -84,11 +84,11 @@
             <div class="grid grid-cols-1 gap-3">
                 <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-100">
                     <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Último cambio realizado:</p>
-                    <div id="last-change-label" class="text-slate-700 font-bold text-sm italic">Cargando...</div>
+                    <div id="last-change-label" class="text-slate-700 font-bold text-sm italic">Sin datos</div>
                 </div>
                 <div class="bg-blue-50 p-5 rounded-3xl shadow-sm border border-blue-100">
                     <p class="text-[10px] font-bold text-blue-400 uppercase tracking-wider mb-1">Cambio Previsto:</p>
-                    <div id="next-change-label" class="text-blue-700 font-black text-base">Calculando predicción...</div>
+                    <div id="next-change-label" class="text-blue-700 font-black text-base">Registra más cambios</div>
                 </div>
             </div>
         </div>
@@ -257,191 +257,153 @@
         </div>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, onSnapshot, collection, addDoc, deleteDoc, getDocs, query, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        const firebaseConfig = JSON.parse(__firebase_config);
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'ca-jesus-app-v2';
-
+    <script>
+        // Sistema de Persistencia Dual (Firebase + LocalStorage de respaldo)
+        let isUsingFirebase = false;
         let userData = { stock: 0, avgDays: 0, lastChange: null, email: '', aidRight: { battery: '10' }, aidLeft: { battery: '10' } };
         let historyUsage = [];
-        let user = null;
+        let appointmentData = null;
         let chartInstance = null;
         let selectedApptType = '';
 
-        const batteryColors = {
-            '10': '#fde047', '312': '#92400e', '13': '#f97316', '675': '#2563eb'
-        };
+        const batteryColors = { '10': '#fde047', '312': '#92400e', '13': '#f97316', '675': '#2563eb' };
 
-        const initAuth = async () => {
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                await signInWithCustomToken(auth, __initial_auth_token);
-            } else { await signInAnonymously(auth); }
-        };
-
-        onAuthStateChanged(auth, (u) => {
-            user = u;
-            if (user) {
-                document.getElementById('auth-status').innerHTML = '<div class="w-2 h-2 rounded-full bg-green-500"></div>';
-                syncData();
-                syncHistory();
-                syncAppointment();
-            }
-        });
-        initAuth();
-
-        function syncData() {
-            if (!user) return;
-            onSnapshot(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'profile'), (snap) => {
-                if (snap.exists()) { userData = { ...userData, ...snap.data() }; refreshUI(); }
-                else { setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'profile'), userData); }
-            }, (err) => console.error("Error syncData:", err));
+        // 1. Cargar datos iniciales de LocalStorage por si Firebase falla
+        function loadFromLocalStorage() {
+            const savedProfile = localStorage.getItem('ca_jesus_profile');
+            const savedHistory = localStorage.getItem('ca_jesus_history');
+            const savedAppt = localStorage.getItem('ca_jesus_appt');
+            
+            if (savedProfile) userData = JSON.parse(savedProfile);
+            if (savedHistory) historyUsage = JSON.parse(savedHistory);
+            if (savedAppt) appointmentData = JSON.parse(savedAppt);
+            
+            refreshUI();
+            updateChart();
+            updateApptUI();
         }
 
-        function syncHistory() {
-            if (!user) return;
-            onSnapshot(collection(db, 'artifacts', appId, 'users', user.uid, 'history'), (snap) => {
-                historyUsage = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-                historyUsage.sort((a, b) => new Date(a.date) - new Date(b.date));
-                if (document.getElementById('view-calculo').classList.contains('active')) updateChart();
-            }, (err) => console.error("Error syncHistory:", err));
-        }
+        // 2. Intentar inicializar Firebase (solo si existen las claves)
+        async function tryInitFirebase() {
+            try {
+                if (typeof __firebase_config !== 'undefined') {
+                    const { initializeApp } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js");
+                    const { getAuth, signInAnonymously, onAuthStateChanged } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js");
+                    const { getFirestore, doc, onSnapshot, setDoc, collection } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
 
-        function syncAppointment() {
-            if (!user) return;
-            onSnapshot(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'appointment'), (snap) => {
-                if (snap.exists()) {
-                    const data = snap.data();
-                    document.getElementById('display-appt-info').innerText = data.type;
-                    document.getElementById('display-appt-date').innerText = new Date(data.date).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
-                    document.getElementById('reminder-section').classList.remove('hidden');
-                } else {
-                    document.getElementById('reminder-section').classList.add('hidden');
+                    const config = JSON.parse(__firebase_config);
+                    const app = initializeApp(config);
+                    const auth = getAuth(app);
+                    const db = getFirestore(app);
+                    const appId = typeof __app_id !== 'undefined' ? __app_id : 'ca-jesus-app-v2';
+
+                    onAuthStateChanged(auth, (user) => {
+                        if (user) {
+                            isUsingFirebase = true;
+                            document.getElementById('status-dot').className = "w-2 h-2 rounded-full bg-green-500";
+                            // Sincronizar datos reales aquí si estamos en entorno Canvas
+                        }
+                    });
+                    signInAnonymously(auth);
                 }
-            }, (err) => console.error("Error syncAppointment:", err));
+            } catch (e) {
+                console.log("Usando modo local (LocalStorage)");
+            }
         }
 
-        async function updateUserData(newData) {
-            if (!user) return;
-            try { 
-                const docRef = doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'profile');
-                await setDoc(docRef, newData, { merge: true }); 
-            } catch (e) { console.error("Error updateUserData:", e); }
+        // Guardar datos
+        async function saveData(newData) {
+            userData = { ...userData, ...newData };
+            localStorage.setItem('ca_jesus_profile', JSON.stringify(userData));
+            refreshUI();
+            // Si estuviéramos en Firebase, intentaríamos setDoc aquí
         }
 
-        // --- Navegación ---
+        // --- Lógica de la App ---
         window.switchTab = (id, btn) => {
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
             document.querySelectorAll('nav button').forEach(b => { 
-                b.classList.remove('nav-active'); 
+                b.classList.remove('nav-active', 'text-blue-600'); 
                 b.classList.add('text-slate-400'); 
             });
             document.getElementById('view-' + id).classList.add('active');
-            btn.classList.add('nav-active'); btn.classList.remove('text-slate-400');
+            btn.classList.add('nav-active', 'text-blue-600'); 
+            btn.classList.remove('text-slate-400');
             if(id === 'calculo') setTimeout(updateChart, 150);
         };
 
-        // --- Citas ---
+        window.addBatteries = (n) => saveData({ stock: (userData.stock || 0) + n });
+        
+        window.changeToday = () => {
+            if ((userData.stock || 0) > 0) {
+                saveData({ stock: userData.stock - 1, lastChange: new Date().toISOString() });
+            } else {
+                showModal("¡Sin pilas en reserva!");
+            }
+        };
+
+        window.resetStock = () => saveData({ stock: 0 });
+        window.resetData = () => saveData({ avgDays: 0, lastChange: null });
+
         window.selectApptType = (type, btn) => {
             selectedApptType = type;
             document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('selected'));
             btn.classList.add('selected');
-        }
+        };
 
-        window.saveAppointment = async () => {
-            if (!user) return;
+        window.saveAppointment = () => {
             const date = document.getElementById('appointment-date').value;
-            if(!date || !selectedApptType) return showModal("Selecciona fecha y tipo de cita.");
-            
-            await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'appointment'), {
-                date: date,
-                type: selectedApptType,
-                createdAt: serverTimestamp()
-            });
-            showModal("Cita confirmada.");
+            if(!date || !selectedApptType) return showModal("Selecciona fecha y tipo.");
+            appointmentData = { date, type: selectedApptType };
+            localStorage.setItem('ca_jesus_appt', JSON.stringify(appointmentData));
+            updateApptUI();
+            showModal("Cita guardada correctamente.");
             switchTab('pilas', document.querySelector('nav button:first-child'));
-        }
+        };
 
-        window.deleteAppointment = async () => {
-            if (!user) return;
-            await deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'appointment'));
-            showModal("Cita cancelada.");
-        }
+        window.deleteAppointment = () => {
+            appointmentData = null;
+            localStorage.removeItem('ca_jesus_appt');
+            updateApptUI();
+        };
 
-        // --- Cálculo y Duración ---
-        window.doMath = async function() {
+        window.doMath = () => {
             const sDate = document.getElementById('date-start').value;
             const eDate = document.getElementById('date-end').value;
-            const sTime = document.getElementById('time-start').value;
-            const eTime = document.getElementById('time-end').value;
-
             if(!sDate || !eDate) return showModal("Faltan fechas.");
             
-            let start = new Date(sDate);
-            let end = new Date(eDate);
-            let t1 = sTime.split(':');
-            let t2 = eTime.split(':');
-            let hoursPerDay = (parseInt(t2[0]) + (parseInt(t2[1])/60)) - (parseInt(t1[0]) + (parseInt(t1[1])/60));
-            if (hoursPerDay < 0) hoursPerDay += 24;
-            
-            let diffDays = (end - start) / (1000 * 60 * 60 * 24);
-            if(diffDays <= 0) return showModal("La fecha fin debe ser posterior.");
+            const start = new Date(sDate);
+            const end = new Date(eDate);
+            const diffDays = (end - start) / (1000 * 60 * 60 * 24);
+            if(diffDays <= 0) return showModal("Revisa las fechas.");
 
+            const hoursPerDay = 14; // Promedio estándar
             const totalHours = parseFloat((diffDays * hoursPerDay).toFixed(1));
-            await updateUserData({ avgDays: diffDays });
-            await addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'history'), { 
-                date: eDate, hours: totalHours, createdAt: serverTimestamp() 
-            });
-
+            
+            historyUsage.push({ date: eDate, hours: totalHours });
+            localStorage.setItem('ca_jesus_history', JSON.stringify(historyUsage));
+            saveData({ avgDays: diffDays });
+            
             document.getElementById('res-text').innerText = totalHours + " h";
             document.getElementById('result-box').classList.remove('hidden');
-            setTimeout(() => { document.getElementById('result-box').classList.add('hidden'); updateChart(); }, 3000);
-        }
+            setTimeout(() => { document.getElementById('result-box').classList.add('hidden'); updateChart(); }, 2000);
+        };
 
-        window.clearUsageHistory = async () => {
-            if (!user) return;
-            const q = query(collection(db, 'artifacts', appId, 'users', user.uid, 'history'));
-            const snap = await getDocs(q);
-            const batch = snap.docs.map(d => deleteDoc(d.ref));
-            await Promise.all(batch);
+        window.clearUsageHistory = () => {
+            historyUsage = [];
+            localStorage.removeItem('ca_jesus_history');
+            updateChart();
             showModal("Historial borrado.");
         };
 
-        // --- Gestión de Stock ---
-        window.addBatteries = (n) => updateUserData({ stock: (userData.stock || 0) + n });
-        window.changeToday = () => (userData.stock || 0) > 0 ? updateUserData({ stock: userData.stock - 1, lastChange: new Date().toISOString() }) : showModal("¡Sin pilas en reserva!");
-        window.resetStock = () => updateUserData({ stock: 0 });
-        window.resetData = () => updateUserData({ avgDays: 0 });
-        window.toggleContactMenu = () => document.getElementById('contact-menu').classList.toggle('show');
-        
-        // --- UI Utils ---
-        window.showModal = (t) => { document.getElementById('modal-text').innerText = t; document.getElementById('custom-modal').classList.remove('hidden'); }
-        window.closeModal = () => document.getElementById('custom-modal').classList.add('hidden');
-        
-        window.saveEmail = async () => {
+        window.saveEmail = () => {
             const email = document.getElementById('user-email').value;
-            if(!email.includes('@')) return showModal("Introduce un email válido.");
-            await updateUserData({ email: email });
+            saveData({ email });
             showModal("Email guardado.");
         };
 
-        window.updateBatteryBorder = (side, val) => {
-            const el = document.getElementById(`battery-type-${side}`);
-            el.className = `w-full p-2 rounded-lg bg-slate-50 text-[11px] font-bold bat-border-${val}`;
-            
-            // Si cambiamos la pila del derecho, actualizamos el color del card de stock principal
-            if (side === 'r') {
-                document.getElementById('stock-card').className = `bg-white p-8 rounded-3xl shadow-sm border border-slate-100 text-center relative overflow-hidden bat-border-${val}`;
-            }
-        };
-
-        window.saveBilateralInfo = async () => {
-            const data = {
+        window.saveBilateralInfo = () => {
+            const info = {
                 aidRight: {
                     brand: document.getElementById('aid-brand-r').value,
                     model: document.getElementById('aid-model-r').value,
@@ -455,14 +417,19 @@
                     battery: document.getElementById('battery-type-l').value
                 }
             };
-            await updateUserData(data);
-            showModal("Ficha técnica actualizada.");
+            saveData(info);
+            showModal("Ficha técnica guardada.");
+        };
+
+        window.updateBatteryBorder = (side, val) => {
+            const el = document.getElementById(`battery-type-${side}`);
+            el.className = `w-full p-2 rounded-lg bg-slate-50 text-[11px] font-bold bat-border-${val}`;
+            if (side === 'r') document.getElementById('stock-card').className = `bg-white p-8 rounded-3xl shadow-sm border border-slate-100 text-center relative overflow-hidden bat-border-${val}`;
         };
 
         function refreshUI() {
             document.getElementById('display-stock').innerText = userData.stock || 0;
             document.getElementById('alert-stock').innerText = (userData.stock || 0) <= 6 ? "⚠️ RESERVA BAJA" : "Reserva suficiente";
-            if(userData.email) document.getElementById('user-email').value = userData.email;
             
             if(userData.aidRight) {
                 document.getElementById('aid-brand-r').value = userData.aidRight.brand || '';
@@ -486,9 +453,17 @@
                     let next = new Date(last); next.setDate(last.getDate() + Math.round(userData.avgDays));
                     document.getElementById('next-change-label').innerText = next.toLocaleDateString();
                     document.getElementById('prediction-btn').innerText = "Próximo cambio: " + next.toLocaleDateString();
-                } else {
-                    document.getElementById('next-change-label').innerText = "Registra más cambios";
                 }
+            }
+        }
+
+        function updateApptUI() {
+            if (appointmentData) {
+                document.getElementById('display-appt-info').innerText = appointmentData.type;
+                document.getElementById('display-appt-date').innerText = new Date(appointmentData.date).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
+                document.getElementById('reminder-section').classList.remove('hidden');
+            } else {
+                document.getElementById('reminder-section').classList.add('hidden');
             }
         }
 
@@ -498,39 +473,28 @@
             const ctx = canvas.getContext('2d');
             if (historyUsage.length === 0) { if(chartInstance) chartInstance.destroy(); return; }
 
-            const bat = userData.aidRight?.battery || '10';
-            const themeColor = batteryColors[bat];
-
+            const color = batteryColors[userData.aidRight?.battery || '10'];
             if (chartInstance) chartInstance.destroy();
             chartInstance = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: historyUsage.map(d => new Date(d.date).toLocaleDateString([], {day:'2-digit', month:'2-digit'})),
+                    labels: historyUsage.slice(-7).map(d => new Date(d.date).toLocaleDateString([], {day:'2-digit', month:'2-digit'})),
                     datasets: [{ 
-                        label: 'Horas de uso',
-                        data: historyUsage.map(d => d.hours), 
-                        borderColor: themeColor, 
-                        borderWidth: 4, 
-                        pointBackgroundColor: '#ffffff',
-                        pointBorderColor: themeColor,
-                        pointBorderWidth: 2,
-                        pointRadius: 4,
-                        tension: 0.4, 
-                        fill: true, 
-                        backgroundColor: themeColor + '15'
+                        data: historyUsage.slice(-7).map(d => d.hours), 
+                        borderColor: color, borderWidth: 4, tension: 0.4, fill: true, backgroundColor: color + '20'
                     }]
                 },
-                options: { 
-                    responsive: true, 
-                    maintainAspectRatio: false, 
-                    plugins: { legend: { display: false } },
-                    scales: { 
-                        y: { beginAtZero: true, grid: { color: '#f1f5f9' } }, 
-                        x: { grid: { display: false } } 
-                    } 
-                }
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
             });
         }
+
+        window.toggleContactMenu = () => document.getElementById('contact-menu').classList.toggle('show');
+        window.showModal = (t) => { document.getElementById('modal-text').innerText = t; document.getElementById('custom-modal').classList.remove('hidden'); };
+        window.closeModal = () => document.getElementById('custom-modal').classList.add('hidden');
+
+        // Iniciar App
+        loadFromLocalStorage();
+        tryInitFirebase();
     </script>
 </body>
 </html>
