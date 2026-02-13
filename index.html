@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Centro Auditivo Jesús</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; -webkit-tap-highlight-color: transparent; }
+        .nav-active { color: #2563eb; border-top: 3px solid #2563eb; background: #eff6ff; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
+        .web-preview { width: 100%; height: calc(100vh - 250px); border-radius: 20px; border: 1px solid #e2e8f0; }
+        
+        .contact-menu { transform: translateY(20px); opacity: 0; pointer-events: none; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .contact-menu.show { transform: translateY(0); opacity: 1; pointer-events: auto; }
+
+        .bat-border-10 { border-bottom: 4px solid #fde047; }
+        .bat-border-312 { border-bottom: 4px solid #92400e; }
+        .bat-border-13 { border-bottom: 4px solid #f97316; }
+        .bat-border-675 { border-bottom: 4px solid #2563eb; }
+
+        .type-btn.selected { background-color: #2563eb; color: white; border-color: #2563eb; }
+        
+        .logo-img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen text-slate-800">
+
+    <!-- Header / Branding -->
+    <div class="bg-white p-6 border-b shadow-sm sticky top-0 z-20 text-center">
+        <div class="flex items-center justify-center gap-4">
+            <div id="logo-container" class="w-16 h-16 flex items-center justify-center overflow-hidden bg-slate-50 rounded-xl p-1 shadow-inner">
+                <!-- Logotipo actualizado con la URL proporcionada -->
+                <img id="main-logo" src="https://centroauditivojesus.wordpress.com/wp-content/uploads/2017/10/cropped-corazc3b3n1.jpg?w=96" alt="Logo Centro Auditivo Jesús" class="logo-img" onerror="this.src='https://cdn-icons-png.flaticon.com/512/3022/3022295.png'">
+            </div>
+            <div class="text-left">
+                <h1 class="text-xl font-black text-blue-700 tracking-tight leading-none uppercase">Centro Auditivo Jesús</h1>
+                <p class="text-[10px] font-bold text-slate-400 mt-1 tracking-[0.2em] uppercase italic">Cuidamos tu audición</p>
+            </div>
+        </div>
+        <div id="auth-status" class="absolute top-6 right-6">
+            <div class="w-2 h-2 rounded-full bg-gray-300"></div>
+        </div>
+    </div>
+
+    <!-- Contenido Principal -->
+    <div class="p-4 max-w-md mx-auto mb-24">
+        
+        <!-- Vista: Pilas -->
+        <div id="view-pilas" class="tab-content active space-y-4">
+            <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 text-center relative overflow-hidden">
+                <button onclick="resetStock()" class="absolute top-4 right-4 text-slate-300 hover:text-red-500 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                </button>
+                <p class="text-slate-400 text-xs font-bold uppercase tracking-widest">Pilas en reserva</p>
+                <h2 id="display-stock" class="text-6xl font-black text-slate-800 my-3">--</h2>
+                <p id="alert-stock" class="text-slate-400 text-xs font-bold italic">Sincronizando...</p>
+            </div>
+
+            <button onclick="changeToday()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-5 rounded-2xl shadow-lg active:scale-95 transition-all flex flex-col items-center">
+                <span class="text-lg">🔋 REGISTRAR CAMBIO HOY</span>
+                <span id="prediction-btn" class="text-[10px] opacity-90 font-medium mt-1 uppercase tracking-tighter">Cargando estimación...</span>
+            </button>
+
+            <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-100">
+                <p class="font-bold text-slate-700 mb-4 flex items-center">
+                    <span class="mr-2">🛒</span> Añadir Compra
+                </p>
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                    <button onclick="addBatteries(6)" class="bg-slate-50 hover:bg-blue-50 text-slate-600 p-4 rounded-2xl text-sm font-bold border border-slate-100 transition-colors">1 Blíster (6)</button>
+                    <button onclick="addBatteries(12)" class="bg-slate-50 hover:bg-blue-50 text-slate-600 p-4 rounded-2xl text-sm font-bold border border-slate-100 transition-colors">2 Blísters (12)</button>
+                    <button onclick="addBatteries(24)" class="bg-slate-50 hover:bg-blue-50 text-slate-600 p-4 rounded-2xl text-sm font-bold border border-slate-100 transition-colors">4 Blísters (24)</button>
+                    <button onclick="addBatteries(60)" class="bg-slate-900 text-white p-4 rounded-2xl text-sm font-bold shadow-md active:scale-95 transition-transform">Caja (60)</button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 gap-3">
+                <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-100">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Último cambio realizado:</p>
+                    <div id="last-change-label" class="text-slate-700 font-bold text-sm italic">Cargando...</div>
+                </div>
+                <div class="bg-blue-50 p-5 rounded-3xl shadow-sm border border-blue-100">
+                    <p class="text-[10px] font-bold text-blue-400 uppercase tracking-wider mb-1">Cambio Previsto:</p>
+                    <div id="next-change-label" class="text-blue-700 font-black text-base">Calculando predicción...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vista: Citas -->
+        <div id="view-citas" class="tab-content space-y-4">
+            <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                <h2 class="font-black text-slate-800 mb-1 text-xl">Mis Citas</h2>
+                <p class="text-slate-400 text-xs mb-4">Agenda tu próxima revisión en el centro</p>
+                <input type="date" id="appointment-date" class="w-full p-4 bg-slate-50 border-none rounded-2xl text-sm">
+                <div class="grid grid-cols-3 gap-2 mt-4">
+                    <button onclick="selectApptType('Revisión', this)" class="type-btn py-3 border border-slate-100 bg-slate-50 rounded-xl text-[10px] font-bold transition-all">REVISIÓN</button>
+                    <button onclick="selectApptType('Mantenimiento', this)" class="type-btn py-3 border border-slate-100 bg-slate-50 rounded-xl text-[10px] font-bold transition-all">LIMPIEZA</button>
+                    <button onclick="selectApptType('Consulta', this)" class="type-btn py-3 border border-slate-100 bg-slate-50 rounded-xl text-[10px] font-bold transition-all">AJUSTE</button>
+                </div>
+                <button onclick="saveAppointment()" class="w-full bg-blue-600 text-white font-bold py-4 rounded-2xl shadow-lg mt-6 active:scale-95 transition-transform">CONFIRMAR CITA</button>
+            </div>
+            
+            <div id="reminder-section" class="hidden">
+                <div class="bg-slate-900 p-6 rounded-3xl text-white shadow-xl relative overflow-hidden">
+                    <div class="absolute -right-4 -top-4 opacity-10 text-8xl">📅</div>
+                    <p class="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-2">Próxima cita programada</p>
+                    <h3 id="display-appt-info" class="text-2xl font-black">--</h3>
+                    <p id="display-appt-date" class="text-sm opacity-70 mt-1 font-medium italic">--</p>
+                    <button onclick="deleteAppointment()" class="mt-4 text-[10px] font-bold text-red-400 uppercase tracking-tighter hover:text-red-300">Cancelar cita</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vista: Cálculo -->
+        <div id="view-calculo" class="tab-content space-y-4">
+            <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                <h2 class="font-black text-slate-800 mb-1 text-xl">Calculadora de Duración</h2>
+                <p class="text-slate-400 text-xs mb-6 font-medium">Estima cuántas horas dura tu pila actual</p>
+                
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-400 uppercase ml-2">Fecha Inicio</label>
+                            <input type="date" id="date-start" class="w-full p-4 bg-slate-50 border-none rounded-2xl text-sm focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-400 uppercase ml-2">Fecha Fin</label>
+                            <input type="date" id="date-end" class="w-full p-4 bg-slate-50 border-none rounded-2xl text-sm focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-400 uppercase ml-2">Puesta a las:</label>
+                            <input type="time" id="time-start" value="08:00" class="w-full p-4 bg-slate-50 border-none rounded-2xl text-sm">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-400 uppercase ml-2">Quitada a las:</label>
+                            <input type="time" id="time-end" value="22:00" class="w-full p-4 bg-slate-50 border-none rounded-2xl text-sm">
+                        </div>
+                    </div>
+                    <button onclick="doMath()" class="w-full bg-slate-800 text-white font-bold py-5 rounded-2xl shadow-lg active:scale-95 transition-all mt-2">
+                        CALCULAR Y GUARDAR
+                    </button>
+                </div>
+            </div>
+
+            <div id="result-box" class="hidden bg-green-500 text-white p-6 rounded-3xl text-center shadow-lg">
+                <p id="res-text" class="text-2xl font-black">--</p>
+            </div>
+
+            <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                <div class="flex justify-between items-start mb-4">
+                    <h3 class="font-bold text-slate-700 text-sm uppercase tracking-wider">Evolución de Duración</h3>
+                    <button onclick="clearUsageHistory()" class="text-[10px] font-bold text-red-500 hover:text-red-700 uppercase tracking-tighter bg-red-50 px-3 py-1 rounded-full">Borrar Historial</button>
+                </div>
+                <div class="relative h-56 w-full">
+                    <canvas id="usageChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vista: Info -->
+        <div id="view-info" class="tab-content space-y-4">
+            <div class="bg-white p-4 rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+                <iframe src="https://centroauditivojesus.com/" class="web-preview" frameborder="0"></iframe>
+                <div class="mt-4 relative">
+                    <div id="contact-menu" class="contact-menu absolute bottom-full left-0 right-0 mb-4 space-y-2 bg-white p-4 rounded-2xl shadow-2xl border border-slate-100">
+                        <a href="tel:955104419" class="flex items-center gap-4 p-3 hover:bg-slate-50 rounded-xl transition-colors">
+                            <span class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">📞</span>
+                            <div class="text-left"><p class="text-xs font-bold">Llamar</p><p class="text-[10px] text-slate-400">955 104 419</p></div>
+                        </a>
+                        <a href="mailto:contacto@centroauditivojesus.com" class="flex items-center gap-4 p-3 hover:bg-slate-50 rounded-xl transition-colors">
+                            <span class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">📧</span>
+                            <div class="text-left"><p class="text-xs font-bold">Email</p><p class="text-[10px] text-slate-400">contacto@centroauditivojesus.com</p></div>
+                        </a>
+                        <a href="https://wa.me/34637087996" target="_blank" class="flex items-center gap-4 p-3 hover:bg-slate-50 rounded-xl transition-colors">
+                            <span class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">💬</span>
+                            <div class="text-left"><p class="text-xs font-bold">WhatsApp</p><p class="text-[10px] text-slate-400">637 087 996</p></div>
+                        </a>
+                    </div>
+                    <button onclick="toggleContactMenu()" class="w-full bg-slate-900 text-white font-black py-5 rounded-2xl shadow-xl flex items-center justify-center gap-2">🤝 CONTACTAR</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vista: Conf -->
+        <div id="view-conf" class="tab-content space-y-4">
+            <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                <h2 class="font-black text-slate-800 mb-4 text-xl">Configuración</h2>
+                
+                <div class="mb-6">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase">Email de Usuario</label>
+                    <div class="flex gap-2 mt-1">
+                        <input type="email" id="user-email" class="flex-1 p-3 rounded-xl bg-slate-50 text-sm">
+                        <button onclick="saveEmail()" class="bg-blue-600 text-white px-4 rounded-xl font-bold text-xs">OK</button>
+                    </div>
+                </div>
+
+                <div class="space-y-4 mb-6">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="space-y-3">
+                            <div class="bg-red-600 text-white p-3 rounded-xl text-center shadow-md">
+                                <p class="text-xs font-black tracking-tight uppercase">Derecho</p>
+                            </div>
+                            <input type="text" id="aid-brand-r" placeholder="Marca" class="w-full p-2 rounded-lg bg-slate-50 text-[11px]">
+                            <input type="text" id="aid-model-r" placeholder="Modelo" class="w-full p-2 rounded-lg bg-slate-50 text-[11px]">
+                            <input type="text" id="aid-sn-r" placeholder="Nº Serie" class="w-full p-2 rounded-lg bg-slate-50 text-[11px]">
+                            <select id="battery-type-r" onchange="updateBatteryBorder('r', this.value)" class="w-full p-2 rounded-lg bg-slate-50 text-[11px] font-bold">
+                                <option value="10">Pila 10</option><option value="312">Pila 312</option><option value="13">Pila 13</option><option value="675">Pila 675</option>
+                            </select>
+                        </div>
+                        <div class="space-y-3">
+                            <div class="bg-blue-600 text-white p-3 rounded-xl text-center shadow-md">
+                                <p class="text-xs font-black tracking-tight uppercase">Izquierdo</p>
+                            </div>
+                            <input type="text" id="aid-brand-l" placeholder="Marca" class="w-full p-2 rounded-lg bg-slate-50 text-[11px]">
+                            <input type="text" id="aid-model-l" placeholder="Modelo" class="w-full p-2 rounded-lg bg-slate-50 text-[11px]">
+                            <input type="text" id="aid-sn-l" placeholder="Nº Serie" class="w-full p-2 rounded-lg bg-slate-50 text-[11px]">
+                            <select id="battery-type-l" onchange="updateBatteryBorder('l', this.value)" class="w-full p-2 rounded-lg bg-slate-50 text-[11px] font-bold">
+                                <option value="10">Pila 10</option><option value="312">Pila 312</option><option value="13">Pila 13</option><option value="675">Pila 675</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button onclick="saveBilateralInfo()" class="w-full bg-slate-800 text-white font-bold py-3 rounded-xl text-xs">GUARDAR FICHA ACTUAL</button>
+                </div>
+
+                <div class="space-y-3 pt-6 border-t border-slate-100">
+                    <button onclick="resetData()" class="w-full py-3 bg-red-50 text-red-600 rounded-xl text-xs font-bold">Reiniciar promedios</button>
+                    <button onclick="resetStock()" class="w-full py-3 bg-slate-100 text-slate-600 rounded-xl text-xs font-bold">Reiniciar stock</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Navegación Inferior -->
+    <nav class="fixed bottom-0 w-full bg-white/90 backdrop-blur-md border-t flex justify-between h-20 items-center z-30 shadow-lg">
+        <button onclick="switchTab('pilas', this)" class="nav-active flex-1 flex flex-col items-center text-[10px] font-bold h-full justify-center"><span class="text-xl mb-1">🔋</span>PILAS</button>
+        <button onclick="switchTab('calculo', this)" class="flex-1 flex flex-col items-center text-[10px] font-bold text-slate-400 h-full justify-center"><span class="text-xl mb-1">⚖️</span>CÁLCULO</button>
+        <button onclick="switchTab('citas', this)" class="flex-1 flex flex-col items-center text-[10px] font-bold text-slate-400 h-full justify-center"><span class="text-xl mb-1">📅</span>CITAS</button>
+        <button onclick="switchTab('info', this)" class="flex-1 flex flex-col items-center text-[10px] font-bold text-slate-400 h-full justify-center"><span class="text-xl mb-1">🩺</span>INFO</button>
+        <button onclick="switchTab('conf', this)" class="flex-1 flex flex-col items-center text-[10px] font-bold text-slate-400 h-full justify-center"><span class="text-xl mb-1">⚙️</span>CONF</button>
+    </nav>
+
+    <!-- Modal Personalizado -->
+    <div id="custom-modal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-6 hidden">
+        <div class="bg-white w-full max-w-xs rounded-3xl p-6 text-center shadow-2xl">
+            <p id="modal-text" class="text-slate-800 font-bold mb-6"></p>
+            <button onclick="closeModal()" class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl">Cerrar</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, onSnapshot, updateDoc, collection, addDoc, deleteDoc, getDocs, query, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'audipilas-app';
+
+        let userData = { stock: 0, avgDays: 0, lastChange: null, email: '', aidRight: { battery: '10' }, aidLeft: { battery: '10' } };
+        let historyUsage = [];
+        let user = null;
+        let chartInstance = null;
+        let selectedApptType = '';
+
+        const batteryColors = {
+            '10': '#fde047', '312': '#92400e', '13': '#f97316', '675': '#2563eb'
+        };
+
+        const initAuth = async () => {
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                await signInWithCustomToken(auth, __initial_auth_token);
+            } else { await signInAnonymously(auth); }
+        };
+
+        onAuthStateChanged(auth, (u) => {
+            user = u;
+            if (user) {
+                document.getElementById('auth-status').innerHTML = '<div class="w-2 h-2 rounded-full bg-green-500"></div>';
+                syncData();
+                syncHistory();
+                syncAppointment();
+            }
+        });
+        initAuth();
+
+        function syncData() {
+            if (!user) return;
+            onSnapshot(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'profile'), (snap) => {
+                if (snap.exists()) { userData = { ...userData, ...snap.data() }; refreshUI(); }
+                else { setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'profile'), userData); }
+            });
+        }
+
+        function syncHistory() {
+            if (!user) return;
+            onSnapshot(collection(db, 'artifacts', appId, 'users', user.uid, 'history'), (snap) => {
+                historyUsage = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                historyUsage.sort((a, b) => new Date(a.date) - new Date(b.date));
+                if (document.getElementById('view-calculo').classList.contains('active')) updateChart();
+            });
+        }
+
+        function syncAppointment() {
+            if (!user) return;
+            onSnapshot(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'appointment'), (snap) => {
+                if (snap.exists()) {
+                    const data = snap.data();
+                    document.getElementById('display-appt-info').innerText = data.type;
+                    document.getElementById('display-appt-date').innerText = new Date(data.date).toLocaleDateString();
+                    document.getElementById('reminder-section').classList.remove('hidden');
+                } else {
+                    document.getElementById('reminder-section').classList.add('hidden');
+                }
+            });
+        }
+
+        async function updateUserData(newData) {
+            if (!user) return;
+            try { 
+                const docRef = doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'profile');
+                await setDoc(docRef, newData, { merge: true }); 
+            } catch (e) { console.error(e); }
+        }
+
+        // --- Funciones de Citas ---
+        window.selectApptType = (type, btn) => {
+            selectedApptType = type;
+            document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+        }
+
+        window.saveAppointment = async () => {
+            if (!user) return;
+            const date = document.getElementById('appointment-date').value;
+            if(!date || !selectedApptType) return showModal("Selecciona fecha y tipo de cita.");
+            
+            await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'appointment'), {
+                date: date,
+                type: selectedApptType,
+                createdAt: serverTimestamp()
+            });
+            showModal("Cita confirmada correctamente.");
+            switchTab('pilas', document.querySelector('nav button:first-child'));
+        }
+
+        window.deleteAppointment = async () => {
+            if (!user) return;
+            await deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'appointment'));
+            showModal("Cita cancelada.");
+        }
+
+        // --- Funciones de Cálculo ---
+        window.doMath = async function() {
+            const sDate = document.getElementById('date-start').value;
+            const eDate = document.getElementById('date-end').value;
+            const sTime = document.getElementById('time-start').value;
+            const eTime = document.getElementById('time-end').value;
+
+            if(!sDate || !eDate) return showModal("Faltan fechas.");
+            
+            let start = new Date(sDate);
+            let end = new Date(eDate);
+            let t1 = sTime.split(':');
+            let t2 = eTime.split(':');
+            let hoursPerDay = (parseInt(t2[0]) + (parseInt(t2[1])/60)) - (parseInt(t1[0]) + (parseInt(t1[1])/60));
+            
+            let diffDays = (end - start) / (1000 * 60 * 60 * 24);
+            if(diffDays <= 0) return showModal("La fecha fin debe ser posterior.");
+
+            const totalHours = parseFloat((diffDays * hoursPerDay).toFixed(1));
+            await updateUserData({ avgDays: diffDays });
+            await addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'history'), { 
+                date: eDate, hours: totalHours, createdAt: serverTimestamp() 
+            });
+
+            document.getElementById('res-text').innerText = totalHours + " h";
+            document.getElementById('result-box').classList.remove('hidden');
+            setTimeout(() => { document.getElementById('result-box').classList.add('hidden'); updateChart(); }, 2000);
+        }
+
+        window.clearUsageHistory = async () => {
+            if (!user) return;
+            const q = query(collection(db, 'artifacts', appId, 'users', user.uid, 'history'));
+            const snap = await getDocs(q);
+            const batch = snap.docs.map(d => deleteDoc(d.ref));
+            await Promise.all(batch);
+            showModal("Historial borrado.");
+        };
+
+        // --- Utilidades ---
+        window.switchTab = (id, btn) => {
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('nav button').forEach(b => { 
+                b.classList.remove('nav-active'); 
+                b.classList.add('text-slate-400'); 
+            });
+            document.getElementById('view-' + id).classList.add('active');
+            btn.classList.add('nav-active'); btn.classList.remove('text-slate-400');
+            if(id === 'calculo') setTimeout(updateChart, 100);
+        };
+
+        window.addBatteries = (n) => updateUserData({ stock: (userData.stock || 0) + n });
+        window.changeToday = () => (userData.stock || 0) > 0 ? updateUserData({ stock: userData.stock - 1, lastChange: new Date().toISOString() }) : showModal("¡Sin pilas!");
+        window.resetStock = () => updateUserData({ stock: 0 });
+        window.resetData = () => updateUserData({ avgDays: 0 });
+        window.toggleContactMenu = () => document.getElementById('contact-menu').classList.toggle('show');
+        window.showModal = (t) => { document.getElementById('modal-text').innerText = t; document.getElementById('custom-modal').classList.remove('hidden'); }
+        window.closeModal = () => document.getElementById('custom-modal').classList.add('hidden');
+        window.saveEmail = async () => {
+            const email = document.getElementById('user-email').value;
+            if(!email.includes('@')) return showModal("Email no válido.");
+            await updateUserData({ email: email });
+            showModal("Email actualizado.");
+        };
+
+        window.updateBatteryBorder = (side, val) => {
+            const el = document.getElementById(`battery-type-${side}`);
+            el.className = `w-full p-2 rounded-lg bg-slate-50 text-[11px] font-bold bat-border-${val}`;
+        };
+
+        window.saveBilateralInfo = async () => {
+            const data = {
+                aidRight: {
+                    brand: document.getElementById('aid-brand-r').value,
+                    model: document.getElementById('aid-model-r').value,
+                    sn: document.getElementById('aid-sn-r').value,
+                    battery: document.getElementById('battery-type-r').value
+                },
+                aidLeft: {
+                    brand: document.getElementById('aid-brand-l').value,
+                    model: document.getElementById('aid-model-l').value,
+                    sn: document.getElementById('aid-sn-l').value,
+                    battery: document.getElementById('battery-type-l').value
+                }
+            };
+            await updateUserData(data);
+            showModal("Ficha técnica guardada.");
+        };
+
+        function refreshUI() {
+            document.getElementById('display-stock').innerText = userData.stock || 0;
+            document.getElementById('alert-stock').innerText = (userData.stock || 0) <= 6 ? "⚠️ RESERVA BAJA" : "Stock OK";
+            if(userData.email) document.getElementById('user-email').value = userData.email;
+            
+            if(userData.aidRight) {
+                document.getElementById('aid-brand-r').value = userData.aidRight.brand || '';
+                document.getElementById('aid-model-r').value = userData.aidRight.model || '';
+                document.getElementById('aid-sn-r').value = userData.aidRight.sn || '';
+                document.getElementById('battery-type-r').value = userData.aidRight.battery || '10';
+                updateBatteryBorder('r', userData.aidRight.battery || '10');
+            }
+            if(userData.aidLeft) {
+                document.getElementById('aid-brand-l').value = userData.aidLeft.brand || '';
+                document.getElementById('aid-model-l').value = userData.aidLeft.model || '';
+                document.getElementById('aid-sn-l').value = userData.aidLeft.sn || '';
+                document.getElementById('battery-type-l').value = userData.aidLeft.battery || '10';
+                updateBatteryBorder('l', userData.aidLeft.battery || '10');
+            }
+
+            if(userData.lastChange) {
+                let last = new Date(userData.lastChange);
+                document.getElementById('last-change-label').innerText = last.toLocaleDateString();
+                if(userData.avgDays > 0) {
+                    let next = new Date(last); next.setDate(last.getDate() + Math.round(userData.avgDays));
+                    document.getElementById('next-change-label').innerText = next.toLocaleDateString();
+                    document.getElementById('prediction-btn').innerText = "Próximo cambio: " + next.toLocaleDateString();
+                }
+            }
+        }
+
+        function updateChart() {
+            const canvas = document.getElementById('usageChart');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            if (historyUsage.length === 0) { if(chartInstance) chartInstance.destroy(); return; }
+
+            const bat = userData.aidRight?.battery || '10';
+            const themeColor = batteryColors[bat];
+
+            if (chartInstance) chartInstance.destroy();
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: historyUsage.map(d => new Date(d.date).toLocaleDateString([], {day:'2-digit', month:'2-digit'})),
+                    datasets: [{ 
+                        data: historyUsage.map(d => d.hours), 
+                        borderColor: themeColor, borderWidth: 4, pointBackgroundColor: themeColor, tension: 0.3, fill: true, backgroundColor: themeColor + '20'
+                    }]
+                },
+                options: { 
+                    responsive: true, maintainAspectRatio: false, 
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true }, x: { grid: { display: false } } } 
+                }
+            });
+        }
+    </script>
+</body>
+</html>
