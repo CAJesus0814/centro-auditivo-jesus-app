@@ -38,7 +38,6 @@
     <div class="bg-white p-6 border-b shadow-sm sticky top-0 z-20 text-center">
         <div class="flex items-center justify-center gap-4">
             <div id="logo-container" class="w-16 h-16 flex items-center justify-center overflow-hidden bg-slate-50 rounded-xl p-1 shadow-inner">
-                <!-- Logotipo actualizado con la URL proporcionada -->
                 <img id="main-logo" src="https://centroauditivojesus.wordpress.com/wp-content/uploads/2017/10/cropped-corazc3b3n1.jpg?w=96" alt="Logo Centro Auditivo Jesús" class="logo-img" onerror="this.src='https://cdn-icons-png.flaticon.com/512/3022/3022295.png'">
             </div>
             <div class="text-left">
@@ -56,7 +55,7 @@
         
         <!-- Vista: Pilas -->
         <div id="view-pilas" class="tab-content active space-y-4">
-            <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 text-center relative overflow-hidden">
+            <div id="stock-card" class="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 text-center relative overflow-hidden">
                 <button onclick="resetStock()" class="absolute top-4 right-4 text-slate-300 hover:text-red-500 transition-colors">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
                 </button>
@@ -261,13 +260,13 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, onSnapshot, updateDoc, collection, addDoc, deleteDoc, getDocs, query, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, onSnapshot, collection, addDoc, deleteDoc, getDocs, query, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = JSON.parse(__firebase_config);
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'audipilas-app';
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'ca-jesus-app-v2';
 
         let userData = { stock: 0, avgDays: 0, lastChange: null, email: '', aidRight: { battery: '10' }, aidLeft: { battery: '10' } };
         let historyUsage = [];
@@ -301,7 +300,7 @@
             onSnapshot(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'profile'), (snap) => {
                 if (snap.exists()) { userData = { ...userData, ...snap.data() }; refreshUI(); }
                 else { setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'profile'), userData); }
-            });
+            }, (err) => console.error("Error syncData:", err));
         }
 
         function syncHistory() {
@@ -310,7 +309,7 @@
                 historyUsage = snap.docs.map(d => ({ id: d.id, ...d.data() }));
                 historyUsage.sort((a, b) => new Date(a.date) - new Date(b.date));
                 if (document.getElementById('view-calculo').classList.contains('active')) updateChart();
-            });
+            }, (err) => console.error("Error syncHistory:", err));
         }
 
         function syncAppointment() {
@@ -319,12 +318,12 @@
                 if (snap.exists()) {
                     const data = snap.data();
                     document.getElementById('display-appt-info').innerText = data.type;
-                    document.getElementById('display-appt-date').innerText = new Date(data.date).toLocaleDateString();
+                    document.getElementById('display-appt-date').innerText = new Date(data.date).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
                     document.getElementById('reminder-section').classList.remove('hidden');
                 } else {
                     document.getElementById('reminder-section').classList.add('hidden');
                 }
-            });
+            }, (err) => console.error("Error syncAppointment:", err));
         }
 
         async function updateUserData(newData) {
@@ -332,10 +331,22 @@
             try { 
                 const docRef = doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'profile');
                 await setDoc(docRef, newData, { merge: true }); 
-            } catch (e) { console.error(e); }
+            } catch (e) { console.error("Error updateUserData:", e); }
         }
 
-        // --- Funciones de Citas ---
+        // --- Navegación ---
+        window.switchTab = (id, btn) => {
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('nav button').forEach(b => { 
+                b.classList.remove('nav-active'); 
+                b.classList.add('text-slate-400'); 
+            });
+            document.getElementById('view-' + id).classList.add('active');
+            btn.classList.add('nav-active'); btn.classList.remove('text-slate-400');
+            if(id === 'calculo') setTimeout(updateChart, 150);
+        };
+
+        // --- Citas ---
         window.selectApptType = (type, btn) => {
             selectedApptType = type;
             document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('selected'));
@@ -352,7 +363,7 @@
                 type: selectedApptType,
                 createdAt: serverTimestamp()
             });
-            showModal("Cita confirmada correctamente.");
+            showModal("Cita confirmada.");
             switchTab('pilas', document.querySelector('nav button:first-child'));
         }
 
@@ -362,7 +373,7 @@
             showModal("Cita cancelada.");
         }
 
-        // --- Funciones de Cálculo ---
+        // --- Cálculo y Duración ---
         window.doMath = async function() {
             const sDate = document.getElementById('date-start').value;
             const eDate = document.getElementById('date-end').value;
@@ -376,6 +387,7 @@
             let t1 = sTime.split(':');
             let t2 = eTime.split(':');
             let hoursPerDay = (parseInt(t2[0]) + (parseInt(t2[1])/60)) - (parseInt(t1[0]) + (parseInt(t1[1])/60));
+            if (hoursPerDay < 0) hoursPerDay += 24;
             
             let diffDays = (end - start) / (1000 * 60 * 60 * 24);
             if(diffDays <= 0) return showModal("La fecha fin debe ser posterior.");
@@ -388,7 +400,7 @@
 
             document.getElementById('res-text').innerText = totalHours + " h";
             document.getElementById('result-box').classList.remove('hidden');
-            setTimeout(() => { document.getElementById('result-box').classList.add('hidden'); updateChart(); }, 2000);
+            setTimeout(() => { document.getElementById('result-box').classList.add('hidden'); updateChart(); }, 3000);
         }
 
         window.clearUsageHistory = async () => {
@@ -400,35 +412,32 @@
             showModal("Historial borrado.");
         };
 
-        // --- Utilidades ---
-        window.switchTab = (id, btn) => {
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-            document.querySelectorAll('nav button').forEach(b => { 
-                b.classList.remove('nav-active'); 
-                b.classList.add('text-slate-400'); 
-            });
-            document.getElementById('view-' + id).classList.add('active');
-            btn.classList.add('nav-active'); btn.classList.remove('text-slate-400');
-            if(id === 'calculo') setTimeout(updateChart, 100);
-        };
-
+        // --- Gestión de Stock ---
         window.addBatteries = (n) => updateUserData({ stock: (userData.stock || 0) + n });
-        window.changeToday = () => (userData.stock || 0) > 0 ? updateUserData({ stock: userData.stock - 1, lastChange: new Date().toISOString() }) : showModal("¡Sin pilas!");
+        window.changeToday = () => (userData.stock || 0) > 0 ? updateUserData({ stock: userData.stock - 1, lastChange: new Date().toISOString() }) : showModal("¡Sin pilas en reserva!");
         window.resetStock = () => updateUserData({ stock: 0 });
         window.resetData = () => updateUserData({ avgDays: 0 });
         window.toggleContactMenu = () => document.getElementById('contact-menu').classList.toggle('show');
+        
+        // --- UI Utils ---
         window.showModal = (t) => { document.getElementById('modal-text').innerText = t; document.getElementById('custom-modal').classList.remove('hidden'); }
         window.closeModal = () => document.getElementById('custom-modal').classList.add('hidden');
+        
         window.saveEmail = async () => {
             const email = document.getElementById('user-email').value;
-            if(!email.includes('@')) return showModal("Email no válido.");
+            if(!email.includes('@')) return showModal("Introduce un email válido.");
             await updateUserData({ email: email });
-            showModal("Email actualizado.");
+            showModal("Email guardado.");
         };
 
         window.updateBatteryBorder = (side, val) => {
             const el = document.getElementById(`battery-type-${side}`);
             el.className = `w-full p-2 rounded-lg bg-slate-50 text-[11px] font-bold bat-border-${val}`;
+            
+            // Si cambiamos la pila del derecho, actualizamos el color del card de stock principal
+            if (side === 'r') {
+                document.getElementById('stock-card').className = `bg-white p-8 rounded-3xl shadow-sm border border-slate-100 text-center relative overflow-hidden bat-border-${val}`;
+            }
         };
 
         window.saveBilateralInfo = async () => {
@@ -447,12 +456,12 @@
                 }
             };
             await updateUserData(data);
-            showModal("Ficha técnica guardada.");
+            showModal("Ficha técnica actualizada.");
         };
 
         function refreshUI() {
             document.getElementById('display-stock').innerText = userData.stock || 0;
-            document.getElementById('alert-stock').innerText = (userData.stock || 0) <= 6 ? "⚠️ RESERVA BAJA" : "Stock OK";
+            document.getElementById('alert-stock').innerText = (userData.stock || 0) <= 6 ? "⚠️ RESERVA BAJA" : "Reserva suficiente";
             if(userData.email) document.getElementById('user-email').value = userData.email;
             
             if(userData.aidRight) {
@@ -477,6 +486,8 @@
                     let next = new Date(last); next.setDate(last.getDate() + Math.round(userData.avgDays));
                     document.getElementById('next-change-label').innerText = next.toLocaleDateString();
                     document.getElementById('prediction-btn').innerText = "Próximo cambio: " + next.toLocaleDateString();
+                } else {
+                    document.getElementById('next-change-label').innerText = "Registra más cambios";
                 }
             }
         }
@@ -496,14 +507,27 @@
                 data: {
                     labels: historyUsage.map(d => new Date(d.date).toLocaleDateString([], {day:'2-digit', month:'2-digit'})),
                     datasets: [{ 
+                        label: 'Horas de uso',
                         data: historyUsage.map(d => d.hours), 
-                        borderColor: themeColor, borderWidth: 4, pointBackgroundColor: themeColor, tension: 0.3, fill: true, backgroundColor: themeColor + '20'
+                        borderColor: themeColor, 
+                        borderWidth: 4, 
+                        pointBackgroundColor: '#ffffff',
+                        pointBorderColor: themeColor,
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        tension: 0.4, 
+                        fill: true, 
+                        backgroundColor: themeColor + '15'
                     }]
                 },
                 options: { 
-                    responsive: true, maintainAspectRatio: false, 
+                    responsive: true, 
+                    maintainAspectRatio: false, 
                     plugins: { legend: { display: false } },
-                    scales: { y: { beginAtZero: true }, x: { grid: { display: false } } } 
+                    scales: { 
+                        y: { beginAtZero: true, grid: { color: '#f1f5f9' } }, 
+                        x: { grid: { display: false } } 
+                    } 
                 }
             });
         }
