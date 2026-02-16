@@ -23,6 +23,7 @@
         .bat-border-675 { border-bottom: 4px solid #2563eb; }
 
         .type-btn.selected { background-color: #2563eb; color: white; border-color: #2563eb; }
+        .remind-btn.selected { background-color: #0f172a; color: white; border-color: #0f172a; }
         
         .logo-img {
             max-width: 100%;
@@ -30,9 +31,71 @@
             object-fit: contain;
             border-radius: 8px;
         }
+
+        /* Estilos específicos para el modal de privacidad */
+        #privacy-modal { backdrop-filter: blur(8px); }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen text-slate-800">
+
+    <!-- Modal de Política de Privacidad (Aparece al inicio) -->
+    <div id="privacy-modal" class="fixed inset-0 bg-slate-900/80 z-[100] flex items-center justify-center p-4 hidden">
+        <div class="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl max-h-[90vh] flex flex-col">
+            <div class="overflow-y-auto pr-2 custom-scrollbar">
+                <div class="text-center mb-6">
+                    <div class="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <span class="text-3xl">🛡️</span>
+                    </div>
+                    <h2 class="text-xl font-black text-slate-800 uppercase tracking-tight">Términos y Privacidad</h2>
+                </div>
+                
+                <div class="text-slate-600 text-sm space-y-4 text-justify leading-relaxed">
+                    <p>Al pulsar en <strong>"Aceptar y Continuar"</strong>, usted declara que:</p>
+                    <ul class="list-disc pl-5 space-y-2">
+                        <li>Reconoce que esta App es propiedad intelectual exclusiva de <strong>Centro Auditivo Jesús (Jesús Millán Moya)</strong>.</li>
+                        <li>Se compromete a no distribuir ni instalar la App sin autorización expresa.</li>
+                        <li>Ha leído y acepta la <button onclick="showFullPrivacy()" class="text-blue-600 font-bold underline decoration-2 underline-offset-2">Política de Confidencialidad</button> sobre sus datos de salud.</li>
+                        <li>He leído y acepto los términos y condiciones.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="mt-8 space-y-3">
+                <button onclick="acceptPrivacy()" class="w-full bg-blue-600 text-white font-black py-4 rounded-2xl shadow-lg active:scale-95 transition-transform">ACEPTAR Y CONTINUAR</button>
+                <p class="text-[10px] text-center text-slate-400 font-bold uppercase tracking-widest">Centro Auditivo Jesús © 2024</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sub-Modal: Texto Completo de Política -->
+    <div id="full-privacy-modal" class="fixed inset-0 bg-black/60 z-[110] flex items-center justify-center p-4 hidden">
+        <div class="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl max-h-[85vh] flex flex-col">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-black text-slate-800 text-sm uppercase">Detalle Legal</h3>
+                <button onclick="hideFullPrivacy()" class="text-slate-400 hover:text-slate-800 font-bold">✕</button>
+            </div>
+            <div class="overflow-y-auto text-[11px] text-slate-600 space-y-4 pr-2 text-justify">
+                <p class="font-bold border-b pb-2">Declaración de Propiedad Intelectual y Licencia de Uso</p>
+                <p><strong>Propiedad de la Aplicación:</strong> Esta aplicación (en adelante, "la App") es una obra original creada íntegramente por Jesús Millán Moya (en adelante “autor”). Todos los derechos de propiedad intelectual sobre el diseño, código fuente, estructura de navegación, bases de datos, contenido textual y elementos gráficos pertenecen exclusivamente al autor, de conformidad con las leyes vigentes de propiedad intelectual.</p>
+                
+                <p><strong>Restricciones de Distribución y Uso:</strong> Queda estrictamente prohibida la reproducción, distribución, comunicación pública, transformación o cualquier otra actividad que se realice con los contenidos de esta App, ni aun citando las fuentes, salvo que se cuente con la autorización expresa y por escrito del titular.</p>
+                
+                <p><strong>Licencia al Usuario:</strong> El acceso y uso de esta App se concede de forma personal, intransferible y limitada exclusivamente a los pacientes autorizados por el titular bajo las siguientes condiciones:</p>
+                <ul class="list-disc pl-4 space-y-1">
+                    <li>Instalación: Solo podrá realizarse en los dispositivos y mediante los canales autorizados directamente por el autor.</li>
+                    <li>Prohibiciones: No está permitida la ingeniería inversa, descompilación o intento de extraer el código fuente de la App.</li>
+                    <li>Uso indebido: Cualquier uso no autorizado será considerado una vulneración de los derechos de propiedad intelectual y podrá dar lugar al ejercicio de las acciones legales pertinentes.</li>
+                </ul>
+                <p class="italic">Nota: El hecho de que el uso de esta App sea gratuito para el paciente no implica, en ningún caso, la renuncia de los derechos de autor ni la cesión de la propiedad al usuario.</p>
+
+                <p class="font-bold border-b pb-2 pt-2 text-blue-700 uppercase italic">LOPD</p>
+                <p>De acuerdo con el RGPD, la LOPDGDD y la LSSI, <strong>CENTRO AUDITIVO JESÚS (JESÚS MILLÁN MOYA)</strong> trata sus datos personales, con base legal, para posibilitar la relación negocial o profesional y la comunicación con usted o su empresa.</p>
+                <p>Puede solicitar información complementaria a propósito de los referidos tratamientos de sus datos o gratuitamente ejercitar sus derechos de acceso, rectificación, supresión, oposición, limitación del tratamiento o portabilidad de sus datos a <span class="font-bold">jesusmm@outlook.com</span>.</p>
+                <p>CENTRO AUDITIVO JESÚS (JESÚS MILLÁN MOYA) CL. MADRID, 29, C.P. 41300 SAN JOSÉ DE LA RINCONADA (SEVILLA). Igualmente puede revocar su consentimiento en cualquier momento o acudir a la Autoridad de Control (AEPD).</p>
+            </div>
+            <button onclick="hideFullPrivacy()" class="mt-4 w-full bg-slate-100 text-slate-600 font-bold py-3 rounded-xl">Entendido</button>
+        </div>
+    </div>
 
     <!-- Header / Branding -->
     <div class="bg-white p-6 border-b shadow-sm sticky top-0 z-20 text-center">
@@ -76,7 +139,7 @@
                 <div class="grid grid-cols-2 gap-3 mb-3">
                     <button onclick="addBatteries(6)" class="bg-slate-50 hover:bg-blue-50 text-slate-600 p-4 rounded-2xl text-sm font-bold border border-slate-100 transition-colors">1 Blíster (6)</button>
                     <button onclick="addBatteries(12)" class="bg-slate-50 hover:bg-blue-50 text-slate-600 p-4 rounded-2xl text-sm font-bold border border-slate-100 transition-colors">2 Blísters (12)</button>
-                    <button onclick="addBatteries(24)" class="bg-slate-50 hover:bg-blue-50 text-slate-600 p-4 rounded-2xl text-sm font-bold border border-slate-100 transition-colors">4 Blísters (24)</button>
+                    <button onclick="addBatteries(18)" class="bg-slate-50 hover:bg-blue-50 text-slate-600 p-4 rounded-2xl text-sm font-bold border border-slate-100 transition-colors">3 Blísters (18)</button>
                     <button onclick="addBatteries(60)" class="bg-slate-900 text-white p-4 rounded-2xl text-sm font-bold shadow-md active:scale-95 transition-transform">Caja (60)</button>
                 </div>
             </div>
@@ -98,13 +161,25 @@
             <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
                 <h2 class="font-black text-slate-800 mb-1 text-xl">Mis Citas</h2>
                 <p class="text-slate-400 text-xs mb-4">Agenda tu próxima revisión en el centro</p>
-                <input type="date" id="appointment-date" class="w-full p-4 bg-slate-50 border-none rounded-2xl text-sm">
-                <div class="grid grid-cols-3 gap-2 mt-4">
+                
+                <label class="text-[10px] font-bold text-slate-400 uppercase ml-2">Fecha y hora</label>
+                <input type="datetime-local" id="appointment-date" class="w-full p-4 bg-slate-50 border-none rounded-2xl text-sm mb-4">
+                
+                <p class="text-[10px] font-bold text-slate-400 uppercase ml-2 mb-2">Tipo de cita</p>
+                <div class="grid grid-cols-3 gap-2 mb-6">
                     <button onclick="selectApptType('Revisión', this)" class="type-btn py-3 border border-slate-100 bg-slate-50 rounded-xl text-[10px] font-bold transition-all">REVISIÓN</button>
                     <button onclick="selectApptType('Mantenimiento', this)" class="type-btn py-3 border border-slate-100 bg-slate-50 rounded-xl text-[10px] font-bold transition-all">LIMPIEZA</button>
                     <button onclick="selectApptType('Consulta', this)" class="type-btn py-3 border border-slate-100 bg-slate-50 rounded-xl text-[10px] font-bold transition-all">AJUSTE</button>
                 </div>
-                <button onclick="saveAppointment()" class="w-full bg-blue-600 text-white font-bold py-4 rounded-2xl shadow-lg mt-6 active:scale-95 transition-transform">CONFIRMAR CITA</button>
+
+                <p class="text-[10px] font-bold text-slate-400 uppercase ml-2 mb-2">Recordar cita</p>
+                <div class="grid grid-cols-3 gap-2">
+                    <button onclick="selectReminder(1, this)" class="remind-btn py-3 border border-slate-100 bg-slate-50 rounded-xl text-[10px] font-bold transition-all">1 DÍA ANTES</button>
+                    <button onclick="selectReminder(2, this)" class="remind-btn py-3 border border-slate-100 bg-slate-50 rounded-xl text-[10px] font-bold transition-all">2 DÍAS ANTES</button>
+                    <button onclick="selectReminder(7, this)" class="remind-btn py-3 border border-slate-100 bg-slate-50 rounded-xl text-[10px] font-bold transition-all">1 SEMANA</button>
+                </div>
+
+                <button onclick="saveAppointment()" class="w-full bg-blue-600 text-white font-bold py-4 rounded-2xl shadow-lg mt-8 active:scale-95 transition-transform">CONFIRMAR CITA</button>
             </div>
             
             <div id="reminder-section" class="hidden">
@@ -113,6 +188,7 @@
                     <p class="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-2">Próxima cita programada</p>
                     <h3 id="display-appt-info" class="text-2xl font-black">--</h3>
                     <p id="display-appt-date" class="text-sm opacity-70 mt-1 font-medium italic">--</p>
+                    <p id="display-appt-reminder" class="text-[9px] text-slate-400 mt-2 uppercase font-bold tracking-tighter">--</p>
                     <button onclick="deleteAppointment()" class="mt-4 text-[10px] font-bold text-red-400 uppercase tracking-tighter hover:text-red-300">Cancelar cita</button>
                 </div>
             </div>
@@ -198,7 +274,7 @@
                 <div class="mb-6">
                     <label class="text-[10px] font-bold text-slate-400 uppercase">Email de Usuario</label>
                     <div class="flex gap-2 mt-1">
-                        <input type="email" id="user-email" class="flex-1 p-3 rounded-xl bg-slate-50 text-sm">
+                        <input type="email" id="user-email" class="flex-1 p-3 rounded-xl bg-slate-50 text-sm border-none focus:ring-2 focus:ring-blue-500">
                         <button onclick="saveEmail()" class="bg-blue-600 text-white px-4 rounded-xl font-bold text-xs">OK</button>
                     </div>
                 </div>
@@ -209,10 +285,10 @@
                             <div class="bg-red-600 text-white p-3 rounded-xl text-center shadow-md">
                                 <p class="text-xs font-black tracking-tight uppercase">Derecho</p>
                             </div>
-                            <input type="text" id="aid-brand-r" placeholder="Marca" class="w-full p-2 rounded-lg bg-slate-50 text-[11px]">
-                            <input type="text" id="aid-model-r" placeholder="Modelo" class="w-full p-2 rounded-lg bg-slate-50 text-[11px]">
-                            <input type="text" id="aid-sn-r" placeholder="Nº Serie" class="w-full p-2 rounded-lg bg-slate-50 text-[11px]">
-                            <select id="battery-type-r" onchange="updateBatteryBorder('r', this.value)" class="w-full p-2 rounded-lg bg-slate-50 text-[11px] font-bold">
+                            <input type="text" id="aid-brand-r" placeholder="Marca" class="w-full p-2 rounded-lg bg-slate-50 text-[11px] border-none focus:ring-1 focus:ring-red-500">
+                            <input type="text" id="aid-model-r" placeholder="Modelo" class="w-full p-2 rounded-lg bg-slate-50 text-[11px] border-none focus:ring-1 focus:ring-red-500">
+                            <input type="text" id="aid-sn-r" placeholder="Nº Serie" class="w-full p-2 rounded-lg bg-slate-50 text-[11px] border-none focus:ring-1 focus:ring-red-500">
+                            <select id="battery-type-r" onchange="updateBatteryBorder('r', this.value)" class="w-full p-2 rounded-lg bg-slate-50 text-[11px] font-bold border-none">
                                 <option value="10">Pila 10</option><option value="312">Pila 312</option><option value="13">Pila 13</option><option value="675">Pila 675</option>
                             </select>
                         </div>
@@ -220,18 +296,37 @@
                             <div class="bg-blue-600 text-white p-3 rounded-xl text-center shadow-md">
                                 <p class="text-xs font-black tracking-tight uppercase">Izquierdo</p>
                             </div>
-                            <input type="text" id="aid-brand-l" placeholder="Marca" class="w-full p-2 rounded-lg bg-slate-50 text-[11px]">
-                            <input type="text" id="aid-model-l" placeholder="Modelo" class="w-full p-2 rounded-lg bg-slate-50 text-[11px]">
-                            <input type="text" id="aid-sn-l" placeholder="Nº Serie" class="w-full p-2 rounded-lg bg-slate-50 text-[11px]">
-                            <select id="battery-type-l" onchange="updateBatteryBorder('l', this.value)" class="w-full p-2 rounded-lg bg-slate-50 text-[11px] font-bold">
+                            <input type="text" id="aid-brand-l" placeholder="Marca" class="w-full p-2 rounded-lg bg-slate-50 text-[11px] border-none focus:ring-1 focus:ring-blue-500">
+                            <input type="text" id="aid-model-l" placeholder="Modelo" class="w-full p-2 rounded-lg bg-slate-50 text-[11px] border-none focus:ring-1 focus:ring-blue-500">
+                            <input type="text" id="aid-sn-l" placeholder="Nº Serie" class="w-full p-2 rounded-lg bg-slate-50 text-[11px] border-none focus:ring-1 focus:ring-blue-500">
+                            <select id="battery-type-l" onchange="updateBatteryBorder('l', this.value)" class="w-full p-2 rounded-lg bg-slate-50 text-[11px] font-bold border-none">
                                 <option value="10">Pila 10</option><option value="312">Pila 312</option><option value="13">Pila 13</option><option value="675">Pila 675</option>
                             </select>
                         </div>
                     </div>
-                    <button onclick="saveBilateralInfo()" class="w-full bg-slate-800 text-white font-bold py-3 rounded-xl text-xs">GUARDAR FICHA ACTUAL</button>
+                    <button onclick="saveBilateralInfo()" class="w-full bg-slate-800 text-white font-bold py-4 rounded-2xl shadow-lg active:scale-95 transition-all text-sm">GUARDAR FICHA ACTUAL</button>
                 </div>
 
-                <div class="space-y-3 pt-6 border-t border-slate-100">
+                <!-- SECCIÓN DE CONSULTA DE REGISTRO -->
+                <div id="aid-summary-container" class="hidden mt-8 pt-8 border-t border-slate-100 space-y-4">
+                    <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest text-center">Mis Audífonos Registrados</h3>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div id="summary-right" class="bg-slate-50 p-4 rounded-2xl border-l-4 border-red-500">
+                            <p class="text-[9px] font-bold text-red-600 uppercase mb-2">Oído Derecho</p>
+                            <div id="summary-content-r" class="space-y-1">
+                                <!-- JS llenará esto -->
+                            </div>
+                        </div>
+                        <div id="summary-left" class="bg-slate-50 p-4 rounded-2xl border-l-4 border-blue-500">
+                            <p class="text-[9px] font-bold text-blue-600 uppercase mb-2">Oído Izquierdo</p>
+                            <div id="summary-content-l" class="space-y-1">
+                                <!-- JS llenará esto -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-3 pt-8 border-t border-slate-100 mt-8">
                     <button onclick="resetData()" class="w-full py-3 bg-red-50 text-red-600 rounded-xl text-xs font-bold">Reiniciar promedios</button>
                     <button onclick="resetStock()" class="w-full py-3 bg-slate-100 text-slate-600 rounded-xl text-xs font-bold">Reiniciar stock</button>
                 </div>
@@ -249,7 +344,7 @@
         <button onclick="switchTab('conf', this)" class="flex-1 flex flex-col items-center text-[10px] font-bold text-slate-400 h-full justify-center"><span class="text-xl mb-1">⚙️</span>CONF</button>
     </nav>
 
-    <!-- Modal Personalizado -->
+    <!-- Modal Personalizado (Alertas) -->
     <div id="custom-modal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-6 hidden">
         <div class="bg-white w-full max-w-xs rounded-3xl p-6 text-center shadow-2xl">
             <p id="modal-text" class="text-slate-800 font-bold mb-6"></p>
@@ -258,17 +353,17 @@
     </div>
 
     <script>
-        // Sistema de Persistencia Dual (Firebase + LocalStorage de respaldo)
+        // Persistencia
         let isUsingFirebase = false;
-        let userData = { stock: 0, avgDays: 0, lastChange: null, email: '', aidRight: { battery: '10' }, aidLeft: { battery: '10' } };
+        let userData = { stock: 0, avgDays: 0, lastChange: null, email: '', aidRight: { battery: '10' }, aidLeft: { battery: '10' }, privacyAccepted: false };
         let historyUsage = [];
         let appointmentData = null;
         let chartInstance = null;
         let selectedApptType = '';
+        let selectedReminderDays = 1;
 
         const batteryColors = { '10': '#fde047', '312': '#92400e', '13': '#f97316', '675': '#2563eb' };
 
-        // 1. Cargar datos iniciales de LocalStorage por si Firebase falla
         function loadFromLocalStorage() {
             const savedProfile = localStorage.getItem('ca_jesus_profile');
             const savedHistory = localStorage.getItem('ca_jesus_history');
@@ -278,48 +373,56 @@
             if (savedHistory) historyUsage = JSON.parse(savedHistory);
             if (savedAppt) appointmentData = JSON.parse(savedAppt);
             
+            checkPrivacy();
             refreshUI();
             updateChart();
             updateApptUI();
+            updateSummaryUI();
         }
 
-        // 2. Intentar inicializar Firebase (solo si existen las claves)
+        // Lógica de Privacidad
+        function checkPrivacy() {
+            if (!userData.privacyAccepted) {
+                document.getElementById('privacy-modal').classList.remove('hidden');
+            }
+        }
+
+        window.acceptPrivacy = () => {
+            userData.privacyAccepted = true;
+            saveData({ privacyAccepted: true });
+            document.getElementById('privacy-modal').classList.add('hidden');
+        };
+
+        window.showFullPrivacy = () => {
+            document.getElementById('full-privacy-modal').classList.remove('hidden');
+        };
+
+        window.hideFullPrivacy = () => {
+            document.getElementById('full-privacy-modal').classList.add('hidden');
+        };
+
         async function tryInitFirebase() {
             try {
                 if (typeof __firebase_config !== 'undefined') {
                     const { initializeApp } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js");
                     const { getAuth, signInAnonymously, onAuthStateChanged } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js");
-                    const { getFirestore, doc, onSnapshot, setDoc, collection } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
-
+                    const { getFirestore } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
                     const config = JSON.parse(__firebase_config);
                     const app = initializeApp(config);
                     const auth = getAuth(app);
-                    const db = getFirestore(app);
-                    const appId = typeof __app_id !== 'undefined' ? __app_id : 'ca-jesus-app-v2';
-
-                    onAuthStateChanged(auth, (user) => {
-                        if (user) {
-                            isUsingFirebase = true;
-                            document.getElementById('status-dot').className = "w-2 h-2 rounded-full bg-green-500";
-                            // Sincronizar datos reales aquí si estamos en entorno Canvas
-                        }
-                    });
+                    onAuthStateChanged(auth, (user) => { if (user) { isUsingFirebase = true; document.getElementById('status-dot').className = "w-2 h-2 rounded-full bg-green-500"; } });
                     signInAnonymously(auth);
                 }
-            } catch (e) {
-                console.log("Usando modo local (LocalStorage)");
-            }
+            } catch (e) { console.log("Modo local"); }
         }
 
-        // Guardar datos
         async function saveData(newData) {
             userData = { ...userData, ...newData };
             localStorage.setItem('ca_jesus_profile', JSON.stringify(userData));
             refreshUI();
-            // Si estuviéramos en Firebase, intentaríamos setDoc aquí
+            updateSummaryUI();
         }
 
-        // --- Lógica de la App ---
         window.switchTab = (id, btn) => {
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
             document.querySelectorAll('nav button').forEach(b => { 
@@ -330,6 +433,7 @@
             btn.classList.add('nav-active', 'text-blue-600'); 
             btn.classList.remove('text-slate-400');
             if(id === 'calculo') setTimeout(updateChart, 150);
+            if(id === 'conf') updateSummaryUI();
         };
 
         window.addBatteries = (n) => saveData({ stock: (userData.stock || 0) + n });
@@ -351,14 +455,42 @@
             btn.classList.add('selected');
         };
 
+        window.selectReminder = (days, btn) => {
+            selectedReminderDays = days;
+            document.querySelectorAll('.remind-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+        };
+
+        function downloadICS(title, dateStr, reminderDays) {
+            const date = new Date(dateStr);
+            const endDate = new Date(date.getTime() + 60 * 60 * 1000);
+            const formatDate = (d) => d.toISOString().replace(/-|:|\.\d+/g, "");
+            const icsData = [
+                "BEGIN:VCALENDAR", "VERSION:2.0", "BEGIN:VEVENT",
+                "SUMMARY:Cita " + title + " - Centro Auditivo Jesús",
+                "DTSTART:" + formatDate(date), "DTEND:" + formatDate(endDate),
+                "DESCRIPTION:Cita programada en el Centro Auditivo Jesús.",
+                "LOCATION:Centro Auditivo Jesús",
+                "BEGIN:VALARM", "TRIGGER:-P" + reminderDays + "D", "ACTION:DISPLAY", "DESCRIPTION:Recordatorio de cita", "END:VALARM",
+                "END:VEVENT", "END:VCALENDAR"
+            ].join("\n");
+            const blob = new Blob([icsData], { type: "text/calendar;charset=utf-8" });
+            const link = document.createElement("a");
+            link.href = window.URL.createObjectURL(blob);
+            link.setAttribute("download", "cita_centro_auditivo.ics");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
         window.saveAppointment = () => {
             const date = document.getElementById('appointment-date').value;
-            if(!date || !selectedApptType) return showModal("Selecciona fecha y tipo.");
-            appointmentData = { date, type: selectedApptType };
+            if(!date || !selectedApptType) return showModal("Selecciona fecha, hora y tipo de cita.");
+            appointmentData = { date, type: selectedApptType, reminderDays: selectedReminderDays };
             localStorage.setItem('ca_jesus_appt', JSON.stringify(appointmentData));
+            downloadICS(selectedApptType, date, selectedReminderDays);
             updateApptUI();
-            showModal("Cita guardada correctamente.");
-            switchTab('pilas', document.querySelector('nav button:first-child'));
+            showModal("Cita guardada y añadida al calendario.");
         };
 
         window.deleteAppointment = () => {
@@ -371,19 +503,15 @@
             const sDate = document.getElementById('date-start').value;
             const eDate = document.getElementById('date-end').value;
             if(!sDate || !eDate) return showModal("Faltan fechas.");
-            
             const start = new Date(sDate);
             const end = new Date(eDate);
             const diffDays = (end - start) / (1000 * 60 * 60 * 24);
             if(diffDays <= 0) return showModal("Revisa las fechas.");
-
-            const hoursPerDay = 14; // Promedio estándar
+            const hoursPerDay = 14; 
             const totalHours = parseFloat((diffDays * hoursPerDay).toFixed(1));
-            
             historyUsage.push({ date: eDate, hours: totalHours });
             localStorage.setItem('ca_jesus_history', JSON.stringify(historyUsage));
             saveData({ avgDays: diffDays });
-            
             document.getElementById('res-text').innerText = totalHours + " h";
             document.getElementById('result-box').classList.remove('hidden');
             setTimeout(() => { document.getElementById('result-box').classList.add('hidden'); updateChart(); }, 2000);
@@ -418,18 +546,48 @@
                 }
             };
             saveData(info);
-            showModal("Ficha técnica guardada.");
+            showModal("Ficha técnica guardada y registrada.");
         };
+
+        function updateSummaryUI() {
+            const container = document.getElementById('aid-summary-container');
+            const contentR = document.getElementById('summary-content-r');
+            const contentL = document.getElementById('summary-content-l');
+
+            const hasData = userData.aidRight?.brand || userData.aidLeft?.brand;
+
+            if (hasData) {
+                container.classList.remove('hidden');
+                
+                const createHtml = (side) => `
+                    <p class="text-[11px] font-black text-slate-800">${side.brand || '---'}</p>
+                    <p class="text-[10px] text-slate-500">${side.model || 'Sin modelo'}</p>
+                    <p class="text-[9px] text-slate-400 font-mono">SN: ${side.sn || '---'}</p>
+                    <div class="mt-2 inline-block px-2 py-0.5 rounded-full text-[8px] font-bold text-white bg-slate-800" style="background-color: ${batteryColors[side.battery] || '#333'}">
+                        PILA ${side.battery}
+                    </div>
+                `;
+
+                contentR.innerHTML = createHtml(userData.aidRight);
+                contentL.innerHTML = createHtml(userData.aidLeft);
+            } else {
+                container.classList.add('hidden');
+            }
+        }
 
         window.updateBatteryBorder = (side, val) => {
             const el = document.getElementById(`battery-type-${side}`);
-            el.className = `w-full p-2 rounded-lg bg-slate-50 text-[11px] font-bold bat-border-${val}`;
-            if (side === 'r') document.getElementById('stock-card').className = `bg-white p-8 rounded-3xl shadow-sm border border-slate-100 text-center relative overflow-hidden bat-border-${val}`;
+            if (el) el.className = `w-full p-2 rounded-lg bg-slate-50 text-[11px] font-bold bat-border-${val}`;
+            if (side === 'r') {
+                const stockCard = document.getElementById('stock-card');
+                if (stockCard) stockCard.className = `bg-white p-8 rounded-3xl shadow-sm border border-slate-100 text-center relative overflow-hidden bat-border-${val}`;
+            }
         };
 
         function refreshUI() {
             document.getElementById('display-stock').innerText = userData.stock || 0;
             document.getElementById('alert-stock').innerText = (userData.stock || 0) <= 6 ? "⚠️ RESERVA BAJA" : "Reserva suficiente";
+            document.getElementById('user-email').value = userData.email || '';
             
             if(userData.aidRight) {
                 document.getElementById('aid-brand-r').value = userData.aidRight.brand || '';
@@ -460,11 +618,11 @@
         function updateApptUI() {
             if (appointmentData) {
                 document.getElementById('display-appt-info').innerText = appointmentData.type;
-                document.getElementById('display-appt-date').innerText = new Date(appointmentData.date).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
+                document.getElementById('display-appt-date').innerText = new Date(appointmentData.date).toLocaleString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
+                const rText = appointmentData.reminderDays === 7 ? "1 semana antes" : appointmentData.reminderDays + " días antes";
+                document.getElementById('display-appt-reminder').innerText = "🔔 Recordatorio: " + rText;
                 document.getElementById('reminder-section').classList.remove('hidden');
-            } else {
-                document.getElementById('reminder-section').classList.add('hidden');
-            }
+            } else { document.getElementById('reminder-section').classList.add('hidden'); }
         }
 
         function updateChart() {
@@ -472,7 +630,6 @@
             if (!canvas) return;
             const ctx = canvas.getContext('2d');
             if (historyUsage.length === 0) { if(chartInstance) chartInstance.destroy(); return; }
-
             const color = batteryColors[userData.aidRight?.battery || '10'];
             if (chartInstance) chartInstance.destroy();
             chartInstance = new Chart(ctx, {
@@ -484,7 +641,7 @@
                         borderColor: color, borderWidth: 4, tension: 0.4, fill: true, backgroundColor: color + '20'
                     }]
                 },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
             });
         }
 
@@ -492,7 +649,7 @@
         window.showModal = (t) => { document.getElementById('modal-text').innerText = t; document.getElementById('custom-modal').classList.remove('hidden'); };
         window.closeModal = () => document.getElementById('custom-modal').classList.add('hidden');
 
-        // Iniciar App
+        // Inicio
         loadFromLocalStorage();
         tryInitFirebase();
     </script>
